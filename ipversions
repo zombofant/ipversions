@@ -1,0 +1,80 @@
+#!/usr/bin/python3
+
+import sys
+import subprocess as s
+
+def config():
+    print('multigraph ipversions_rel')
+    print('graph_title IP version distribution - relative')
+    print('graph_vlabel traffic in %')
+    print('graph_args --base 1000 -r --lower-limit 0 --upper-limit 100')
+    print('graph_order v6 v4')
+    print('graph_category network')
+    print('graph_scale no')
+    print('v6.label IPv6')
+    print('v6.draw AREA')
+    print('v6.min 0')
+    print('v4.label IPv4')
+    print('v4.draw STACK')
+    print('v4.min 0\n')
+
+    print('multigraph ipversions_abs')
+    print('graph_title IP version distribution - absolute')
+    print('graph_vlabel traffic in byte/s')
+    print('graph_args --base 1024 --lower-limit 0')
+    print('graph_order v6 v4')
+    print('graph_category network')
+    print('graph_scale yes')
+    print('v6.label IPv6')
+    print('v6.draw AREA')
+    print('v6.min 0')
+    print('v4.label IPv4')
+    print('v4.draw STACK')
+    print('v4.min 0\n')
+
+def calc(debug=False):
+    iptables = '/sbin/iptables'
+    ip6tables = '/sbin/ip6tables'
+    chain = 'ACCT_IPVER'
+    iptls_args = ['-n', '-v', '-x']
+
+    # do not zero the counters when debugging
+    if not debug:
+        iptls_args.append('-Z')
+
+    outputs = [s.check_output([iptables, '-L', chain] + iptls_args).decode(),
+               s.check_output([ip6tables, '-L', chain] + iptls_args).decode()]
+    
+    values = []
+    for output in outputs:
+        fields = filter(None, output.split('\n')[2].split(' '))
+        next(fields)
+        values.append(int(next(fields)))
+
+    total = sum(values)
+    v4abs = values[0]/300
+    v6abs = values[1]/300
+    try:
+        v4rel = values[0]/total*100
+        v6rel = values[1]/total*100
+    except ZeroDivisionError:
+        # not sure how to handle this corner case nicely..
+        v4rel = v6rel = 0
+
+    print('multigraph ipversions_rel')
+    print('v4.value', v4rel)
+    print('v6.value', v6rel, end='\n\n')
+    print('multigraph ipversions_abs')
+    print('v4.value', v4abs)
+    print('v6.value', v6abs)
+        
+    
+
+if sys.argv[1:] == ['config']:
+    config()
+elif sys.argv[1:] == ['debug']:
+    calc(True)
+elif len(sys.argv) > 1:
+    raise InvalidArguments
+else:
+    calc()

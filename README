@@ -1,0 +1,47 @@
+This is a ipversions, a munin plugin to analyze traffic flowing through a
+Linux router by IP version. It draws two graphs, one displaying the ratio of
+v4/v6 traffic in percent, and one displaying absolute throughput values in
+bytes/s.
+
+  SETUP
+---------------------------------------
+For this plugin to work, you need to setup seperate iptables chains,
+redirect all traffic from the forwarding chains through these chains and
+add a filter rule that matches all traffic. These commands should do the
+trick:
+
+  iptables -N ACCT_IPVER
+  ip6tables -N ACCT_IPVER
+  iptables -I FORWARD -j ACCT_IPVER
+  ip6tables -I FORWARD -j ACCT_IPVER
+  iptables -A ACCT_IPVER
+  ip6tables -A ACCT_IPVER
+
+The plugin assumes there is exactly one rule in the ACCT_IPVER chain,
+strange things may happen if there are more rules. If you need more rules to
+monitor different aspects of the traffic flow, add extra chains for that.
+
+ipversions needs to be executed as root, otherwise iptables won't talk to us.
+Achieve this by adding a section in /etc/munin/plugin-conf.d/munin-node:
+
+  [ipversions]
+  user root
+
+
+  REQUIREMENTS
+--------------------------------------
+This plugin requires an installation of python3, iptables and ip6tables.
+
+  LICENSE
+--------------------------------------
+This software is dual-licensed. Permission is hereby granted to use this
+software under the terms of either one of the following licenses:
+
+  • The What The Fuck Public License, Version 2,
+    <http://sam.zoy.org/wtfpl/COPYING>
+  • The Beer-Ware License, Revision 42, <http://people.freebsd.org/~phk/>
+
+  AUTHOR
+--------------------------------------
+ipversions is written by Leon Weber <leon@leonweber.de>. Do not hesitate to
+contact me for any questions.
