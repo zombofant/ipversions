@@ -1,5 +1,5 @@
-This is a ipversions, a munin plugin to analyze traffic flowing through a
-Linux router by IP version. It draws two graphs, one displaying the ratio of
+ipversions is a munin plugin to analyze traffic flowing through aLinux
+router by IP version. It draws two graphs, one displaying the ratio of
 v4/v6 traffic in percent, and one displaying absolute throughput values in
 bytes/s.
 
