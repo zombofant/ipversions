@@ -5,75 +5,16 @@ import platform
 import re
 from subprocess import Popen, PIPE
 
-class Backend:
-    def __init__(self):
-        pass
-
-    def poll(self):
-        pass
-
-class FreeBSDBackend(Backend):
-    netstat = "/usr/bin/netstat"
-
-    def __init__(self):
-        super().__init__()
-
-class LinuxBackend(Backend):
-    netstat = "/bin/netstat"
-
-    def __init__(self):
-        super().__init__()
-
-    def poll(self):
-        lines = self._call_netstat()
-        counter4 = self._parse_netstat4(lines)
-
-        lines = self._call_netstat(args=['-6'])
-        counter6 = self._parse_netstat6(lines)
-
-        return (counter4, counter6)
-
-    def _call_netstat(self, args=[]) :
-        with Popen([self.netstat, "-s"] + args, stdout=PIPE) as proc:
-            return proc.stdout.read().decode()
-
-    def _parse_netstat4(self, output_text):
-        octets_re = re.compile("\s+(In|Out)Octets:\s+([0-9]+)")
-        return sum(int(m.group(2))
-            for m in re.finditer(octets_re, output_text))
-
-    def _parse_netstat6(self, output_text):
-        octets_re = re.compile("\s+Ip6(In|Out)Octets:\s+([0-9]+)")
-        return sum(int(m.group(2))
-            for m in re.finditer(octets_re, output_text))
-
-
-class IPVersions():
-
-    backends_dict = {
-        'Linux': LinuxBackend,
-        'FreeBSD': FreeBSDBackend
-    }
+class IPVersionsBase():
 
     def __init__(self, debug=False):
-        self.backend = self._select_backend()
-        self.debug = debug
-
-    def _select_backend(self):
-        try:
-            return self.backends_dict[platform.system()]()
-        except KeyError:
-            raise NotImplementedError
+        pass
 
     def poll(self):
-        return self.backend.poll()
+        pass
 
-    def compute(self):
-        counters = list(self.poll())
-
-        total = sum(counters)
-        v4abs = counters[0]
-        v6abs = counters[1]
+    def output(self):
+        v4abs, v6abs = list(self.poll())
 
 #        print('multigraph ipversions_rel')
 #        print('v4.value', v4rel)
@@ -114,6 +55,42 @@ class IPVersions():
         print('v4.draw STACK')
         print('v4.min 0\n')
 
+class IPVersionsFreeBSD(IPVersionsBase):
+    netstat = "/usr/bin/netstat"
+
+    def __init__(self):
+        super().__init__()
+
+class IPVersionsLinux(IPVersionsBase):
+    netstat = "/bin/netstat"
+
+    def __init__(self):
+        super().__init__()
+
+    def poll(self):
+        lines = self._call_netstat()
+        counter4 = self._parse_netstat4(lines)
+
+        lines = self._call_netstat(args=['-6'])
+        counter6 = self._parse_netstat6(lines)
+
+        return (counter4, counter6)
+
+    def _call_netstat(self, args=[]) :
+        with Popen([self.netstat, "-s"] + args, stdout=PIPE) as proc:
+            return proc.stdout.read().decode()
+
+    def _parse_netstat4(self, output_text):
+        octets_re = re.compile("\s+(In|Out)Octets:\s+([0-9]+)")
+        return sum(int(m.group(2))
+            for m in re.finditer(octets_re, output_text))
+
+    def _parse_netstat6(self, output_text):
+        octets_re = re.compile("\s+Ip6(In|Out)Octets:\s+([0-9]+)")
+        return sum(int(m.group(2))
+            for m in re.finditer(octets_re, output_text))
+
+
 class InvalidArgumentError(ValueError):
     pass
 
@@ -124,5 +101,14 @@ if __name__ == '__main__':
     elif len(sys.argv) > 1:
         raise InvalidArgumentError
     else:
-        ipversions = IPVersions()
-        ipversions.compute()
+        backends_dict = {
+            'Linux': IPVersionsLinux,
+            'FreeBSD': IPVersionsFreeBSD
+        }
+
+        try:
+            ipversions = backends_dict[platform.system()]()
+        except KeyError:
+            raise NotImplementedError
+
+        ipversions.output()
