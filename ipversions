@@ -7,9 +7,6 @@ from subprocess import Popen, PIPE
 
 class IPVersionsBase():
 
-    def __init__(self, debug=False):
-        pass
-
     def poll(self):
         pass
 
