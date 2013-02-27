@@ -1,80 +1,132 @@
 #!/usr/bin/python3
 
 import sys
-import subprocess as s
+import platform
+import re
+from subprocess import Popen, PIPE
 
-def config():
-    print('multigraph ipversions_rel')
-    print('graph_title IP version distribution - relative')
-    print('graph_vlabel traffic in %')
-    print('graph_args --base 1000 -r --lower-limit 0 --upper-limit 100')
-    print('graph_order v6 v4')
-    print('graph_category network')
-    print('graph_scale no')
-    print('v6.label IPv6')
-    print('v6.draw AREA')
-    print('v6.min 0')
-    print('v4.label IPv4')
-    print('v4.draw STACK')
-    print('v4.min 0\n')
+class Backend:
+    def __init__(self):
+        pass
 
-    print('multigraph ipversions_abs')
-    print('graph_title IP version distribution - absolute')
-    print('graph_vlabel traffic in byte/s')
-    print('graph_args --base 1024 --lower-limit 0')
-    print('graph_order v6 v4')
-    print('graph_category network')
-    print('graph_scale yes')
-    print('v6.label IPv6')
-    print('v6.draw AREA')
-    print('v6.min 0')
-    print('v4.label IPv4')
-    print('v4.draw STACK')
-    print('v4.min 0\n')
+    def poll(self):
+        pass
 
-def calc(debug=False):
-    iptables = '/sbin/iptables'
-    ip6tables = '/sbin/ip6tables'
-    chain = 'ACCT_IPVER'
-    iptls_args = ['-n', '-v', '-x']
+class FreeBSDBackend(Backend):
+    netstat = "/usr/bin/netstat"
 
-    # do not zero the counters when debugging
-    if not debug:
-        iptls_args.append('-Z')
+    def __init__(self):
+        super().__init__()
 
-    outputs = [s.check_output([iptables, '-L', chain] + iptls_args).decode(),
-               s.check_output([ip6tables, '-L', chain] + iptls_args).decode()]
-    
-    values = []
-    for output in outputs:
-        fields = filter(None, output.split('\n')[2].split(' '))
-        next(fields)
-        values.append(int(next(fields)))
+class LinuxBackend(Backend):
+    netstat = "/bin/netstat"
 
-    total = sum(values)
-    v4abs = values[0]/300
-    v6abs = values[1]/300
-    try:
-        v4rel = values[0]/total*100
-        v6rel = values[1]/total*100
-    except ZeroDivisionError:
-        # not sure how to handle this corner case nicely..
-        v4rel = v6rel = 0
+    def __init__(self):
+        super().__init__()
 
-    print('multigraph ipversions_rel')
-    print('v4.value', v4rel)
-    print('v6.value', v6rel, end='\n\n')
-    print('multigraph ipversions_abs')
-    print('v4.value', v4abs)
-    print('v6.value', v6abs)
+    def poll(self):
+        lines = self._call_netstat4()
+        counter4 = self._parse_netstat4(lines)
+
+        lines = self._call_netstat6()
+        counter6 = self._parse_netstat6(lines)
+
+        return (counter4, counter6)
+
+    def _call_netstat4(self):
+        with Popen([self.netstat, "-s"], stdout=PIPE) as proc:
+            return proc.stdout.read().decode()
+
+    def _call_netstat6(self):
+        with Popen([self.netstat, "-s", "-6"], stdout=PIPE) as proc:
+            return proc.stdout.read().decode()
+
+    def _parse_netstat4(self, output_text):
+        octets_re = re.compile("\s+(In|Out)Octets:\s+([0-9]+)")
+        return sum(int(m.group(2))
+            for m in re.finditer(octets_re, output_text))
+
+    def _parse_netstat6(self, output_text):
+        octets_re = re.compile("\s+Ip6(In|Out)Octets:\s+([0-9]+)")
+        return sum(int(m.group(2))
+            for m in re.finditer(octets_re, output_text))
+
+
+class IPVersions():
+
+    backends_dict = {
+        'Linux': LinuxBackend,
+        'FreeBSD': FreeBSDBackend
+    }
+
+    def __init__(self, debug=False):
+        self.backend = self._select_backend()
+        self.debug = debug
+
+    def _select_backend(self):
+        try:
+            return self.backends_dict[platform.system()]()
+        except KeyError:
+            raise NotImplementedError
+
+    def poll(self):
+        return self.backend.poll()
+
+    def compute(self):
+        counters = list(self.poll())
+
+        total = sum(counters)
+        v4abs = counters[0]
+        v6abs = counters[1]
+
+#        print('multigraph ipversions_rel')
+#        print('v4.value', v4rel)
+#        print('v6.value', v6rel, end='\n\n')
+        print('multigraph ipversions_abs')
+        print('v4.value', v4abs)
+        print('v6.value', v6abs)
         
-    
+    @staticmethod
+    def config():
+        print('multigraph ipversions_rel')
+        print('graph_title IP version distribution - relative')
+        print('graph_vlabel traffic in %')
+        print('graph_args --base 1000 -r --lower-limit 0 --upper-limit 100')
+        print('graph_order v6 v4')
+        print('graph_category network')
+        print('graph_scale no')
+        print('v6.label IPv6')
+        print('v6.draw AREA')
+        print('v6.min 0')
+        print('v4.label IPv4')
+        print('v4.draw STACK')
+        print('v4.min 0\n')
 
-if sys.argv[1:] == ['config']:
-    config()
-elif sys.argv[1:] == ['debug']:
-    calc(True)
-elif len(sys.argv) > 1:
-    raise InvalidArguments
-else:
-    calc()
+        print('multigraph ipversions_abs')
+        print('graph_title IP version distribution - absolute')
+        print('graph_vlabel traffic in byte/s')
+        print('graph_args --base 1024 --lower-limit 0')
+        print('graph_order v6 v4')
+        print('graph_category network')
+        print('graph_scale yes')
+        print('v6.type DERIVE')
+        print('v6.label IPv6')
+        print('v6.draw AREA')
+        print('v6.min 0')
+        print('v4.type DERIVE')
+        print('v4.label IPv4')
+        print('v4.draw STACK')
+        print('v4.min 0\n')
+
+class InvalidArgumentError(ValueError):
+    pass
+
+if __name__ == '__main__':
+
+    if sys.argv[1:] == ['config']:
+        IPVersions.config()
+    elif len(sys.argv) > 1:
+        raise InvalidArgumentError
+    else:
+        ipversions = IPVersions()
+        ipversions.compute()
