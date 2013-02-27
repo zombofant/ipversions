@@ -26,9 +26,11 @@ class IPVersionsBase():
         print('graph_title IP version distribution - relative')
         print('graph_vlabel traffic in %')
         print('graph_args --base 1000 -r --lower-limit 0 --upper-limit 100')
-        print('graph_order v6 v4')
+        print('graph_order v6abs=ipversions_abs.v6 v4abs=ipversions_abs.v4')
         print('graph_category network')
         print('graph_scale no')
+        print('v6abs.graph no')
+        print('v4abs.graph no')
         print('v6.label IPv6')
         print('v6.draw AREA')
         print('v6.min 0')
@@ -94,7 +96,7 @@ class InvalidArgumentError(ValueError):
 if __name__ == '__main__':
 
     if sys.argv[1:] == ['config']:
-        IPVersions.config()
+        IPVersionsBase.config()
     elif len(sys.argv) > 1:
         raise InvalidArgumentError
     else:
