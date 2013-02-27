@@ -25,20 +25,16 @@ class LinuxBackend(Backend):
         super().__init__()
 
     def poll(self):
-        lines = self._call_netstat4()
+        lines = self._call_netstat()
         counter4 = self._parse_netstat4(lines)
 
-        lines = self._call_netstat6()
+        lines = self._call_netstat(args=['-6'])
         counter6 = self._parse_netstat6(lines)
 
         return (counter4, counter6)
 
-    def _call_netstat4(self):
-        with Popen([self.netstat, "-s"], stdout=PIPE) as proc:
-            return proc.stdout.read().decode()
-
-    def _call_netstat6(self):
-        with Popen([self.netstat, "-s", "-6"], stdout=PIPE) as proc:
+    def _call_netstat(self, args=[]) :
+        with Popen([self.netstat, "-s"] + args, stdout=PIPE) as proc:
             return proc.stdout.read().decode()
 
     def _parse_netstat4(self, output_text):
