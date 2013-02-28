@@ -13,7 +13,7 @@ class IPVersionsBase():
     def output(self):
         v4abs, v6abs = list(self.poll())
 
-#        print('multigraph ipversions_rel')
+        print('multigraph ipversions_rel', end='\n\n')
 #        print('v4.value', v4rel)
 #        print('v6.value', v6rel, end='\n\n')
         print('multigraph ipversions_abs')
