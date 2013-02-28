@@ -29,6 +29,8 @@ class IPVersionsBase():
         print('graph_order v6abs=ipversions2_abs.v6 v4abs=ipversions2_abs.v4')
         print('graph_category network')
         print('graph_scale no')
+        print('v4abs.label none')
+        print('v6abs.label none')
         print('v6abs.graph no')
         print('v4abs.graph no')
         print('v6.label IPv6')
