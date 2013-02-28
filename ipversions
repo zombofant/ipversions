@@ -34,9 +34,11 @@ class IPVersionsBase():
         print('v6.label IPv6')
         print('v6.draw AREA')
         print('v6.min 0')
+        print('v6.cdef 100,v6abs,v6abs,v4abs,+,/,*')
         print('v4.label IPv4')
         print('v4.draw STACK')
-        print('v4.min 0\n')
+        print('v4.min 0')
+        print('v4.cdef 100,v4abs,v6abs,v4abs,+,/,*\n')
 
         print('multigraph ipversions_abs')
         print('graph_title IP version distribution - absolute')
