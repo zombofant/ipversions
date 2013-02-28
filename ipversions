@@ -26,7 +26,7 @@ class IPVersionsBase():
         print('graph_title IP version distribution - relative')
         print('graph_vlabel traffic in %')
         print('graph_args --base 1000 -r --lower-limit 0 --upper-limit 100')
-        print('graph_order v6abs=ipversions2_abs.v6 v4abs=ipversions2_abs.v4')
+        print('graph_order v6 v4')
         print('graph_category network')
         print('graph_scale no')
         print('v4abs.label none')
