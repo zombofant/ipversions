@@ -13,20 +13,20 @@ class IPVersionsBase():
     def output(self):
         v4abs, v6abs = list(self.poll())
 
-        print('multigraph ipversions_rel', end='\n\n')
+        print('multigraph ipversions2_rel', end='\n\n')
 #        print('v4.value', v4rel)
 #        print('v6.value', v6rel, end='\n\n')
-        print('multigraph ipversions_abs')
+        print('multigraph ipversions2_abs')
         print('v4.value', v4abs)
         print('v6.value', v6abs)
         
     @staticmethod
     def config():
-        print('multigraph ipversions_rel')
+        print('multigraph ipversions2_rel')
         print('graph_title IP version distribution - relative')
         print('graph_vlabel traffic in %')
         print('graph_args --base 1000 -r --lower-limit 0 --upper-limit 100')
-        print('graph_order v6abs=ipversions_abs.v6 v4abs=ipversions_abs.v4')
+        print('graph_order v6abs=ipversions2_abs.v6 v4abs=ipversions2_abs.v4')
         print('graph_category network')
         print('graph_scale no')
         print('v6abs.graph no')
@@ -40,7 +40,7 @@ class IPVersionsBase():
         print('v4.min 0')
         print('v4.cdef 100,v4abs,v6abs,v4abs,+,/,*\n')
 
-        print('multigraph ipversions_abs')
+        print('multigraph ipversions2_abs')
         print('graph_title IP version distribution - absolute')
         print('graph_vlabel traffic in byte/s')
         print('graph_args --base 1024 --lower-limit 0')
